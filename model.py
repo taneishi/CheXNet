@@ -1,11 +1,8 @@
-# encoding: utf-8
-
 """
 The main CheXNet model implementation.
 """
-
-
 import os
+import sys
 import numpy as np
 import torch
 import torch.nn as nn
@@ -15,7 +12,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from read_data import ChestXrayDataSet
 from sklearn.metrics import roc_auc_score
-
+import timeit
 
 CKPT_PATH = 'model.pth.tar'
 N_CLASSES = 14
@@ -23,24 +20,36 @@ CLASS_NAMES = [ 'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass
                 'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia']
 DATA_DIR = './ChestX-ray14/images'
 TEST_IMAGE_LIST = './ChestX-ray14/labels/test_list.txt'
-BATCH_SIZE = 64
-
+BATCH_SIZE = 32
 
 def main():
+    #cudnn.benchmark = True
 
-    cudnn.benchmark = True
+    #torch.cuda.set_enabled_lms(True) 
+    #print('LMS is %s' % ('On' if torch.cuda.get_enabled_lms() else 'Off'))
 
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
     # initialize and load the model
-    model = DenseNet121(N_CLASSES).cuda()
-    model = torch.nn.DataParallel(model).cuda()
+    model = DenseNet121(N_CLASSES).to(device)
+    if torch.cuda.device_count() > 1:
+        model = torch.nn.DataParallel(model).to(device)
 
     if os.path.isfile(CKPT_PATH):
         print("=> loading checkpoint")
         checkpoint = torch.load(CKPT_PATH)
-        model.load_state_dict(checkpoint['state_dict'])
+        state_dict = {}
+        for k,v in checkpoint['state_dict'].items():
+            k = k.replace('module.', '')
+            k = k.replace('norm.1', 'norm1')
+            k = k.replace('norm.2', 'norm2')
+            k = k.replace('conv.1', 'conv1')
+            k = k.replace('conv.2', 'conv2')
+            state_dict[k] = v
+        model.load_state_dict(state_dict)
         print("=> loaded checkpoint")
     else:
-        print("=> no checkpoint found")
+        print("=> no model found")
 
     normalize = transforms.Normalize([0.485, 0.456, 0.406],
                                      [0.229, 0.224, 0.225])
@@ -56,32 +65,36 @@ def main():
                                         (lambda crops: torch.stack([normalize(crop) for crop in crops]))
                                     ]))
     test_loader = DataLoader(dataset=test_dataset, batch_size=BATCH_SIZE,
-                             shuffle=False, num_workers=8, pin_memory=True)
+                             shuffle=False, num_workers=10, pin_memory=False)
 
     # initialize the ground truth and output tensor
     gt = torch.FloatTensor()
-    gt = gt.cuda()
+    gt = gt.to(device)
     pred = torch.FloatTensor()
-    pred = pred.cuda()
+    pred = pred.to(device)
+
+    now = timeit.default_timer()
 
     # switch to evaluate mode
     model.eval()
 
     for i, (inp, target) in enumerate(test_loader):
-        target = target.cuda()
+        target = target.to(device)
         gt = torch.cat((gt, target), 0)
         bs, n_crops, c, h, w = inp.size()
-        input_var = torch.autograd.Variable(inp.view(-1, c, h, w).cuda(), volatile=True)
-        output = model(input_var)
+        with torch.no_grad():
+            input_var = torch.autograd.Variable(inp.view(-1, c, h, w).to(device))
+            output = model(input_var)
         output_mean = output.view(bs, n_crops, -1).mean(1)
         pred = torch.cat((pred, output_mean.data), 0)
+
+    print('Elapsed time: %0.2f sec.' % (timeit.default_timer() - now))
 
     AUROCs = compute_AUCs(gt, pred)
     AUROC_avg = np.array(AUROCs).mean()
     print('The average AUROC is {AUROC_avg:.3f}'.format(AUROC_avg=AUROC_avg))
     for i in range(N_CLASSES):
-        print('The AUROC of {} is {}'.format(CLASS_NAMES[i], AUROCs[i]))
-
+        print('The AUROC of {} is {:.3f}'.format(CLASS_NAMES[i], AUROCs[i]))
 
 def compute_AUCs(gt, pred):
     """Computes Area Under the Curve (AUC) from prediction scores.
@@ -103,7 +116,6 @@ def compute_AUCs(gt, pred):
         AUROCs.append(roc_auc_score(gt_np[:, i], pred_np[:, i]))
     return AUROCs
 
-
 class DenseNet121(nn.Module):
     """Model modified.
 
@@ -123,7 +135,6 @@ class DenseNet121(nn.Module):
     def forward(self, x):
         x = self.densenet121(x)
         return x
-
 
 if __name__ == '__main__':
     main()
