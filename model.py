@@ -37,7 +37,7 @@ def main():
 
     if os.path.isfile(CKPT_PATH):
         print("=> loading checkpoint")
-        checkpoint = torch.load(CKPT_PATH)
+        checkpoint = torch.load(CKPT_PATH, map_location=device)
         state_dict = {}
         for k,v in checkpoint['state_dict'].items():
             k = k.replace('module.', '')
