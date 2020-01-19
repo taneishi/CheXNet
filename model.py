@@ -1,27 +1,33 @@
-"""
-The main CheXNet model implementation.
-"""
-import os
-import sys
+# %%
 import numpy as np
+from sklearn.metrics import roc_auc_score
+import timeit
+import sys
+import os
+
+# %%
 import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
-from read_data import ChestXrayDataSet
-from sklearn.metrics import roc_auc_score
-import timeit
 
-CKPT_PATH = 'model.pth.tar'
+# %%
+from read_data import ChestXrayDataSet
+
+# %%
+CKPT_PATH = 'model/model.pth.tar'
 N_CLASSES = 14
-CLASS_NAMES = [ 'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
-                'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia']
+CLASS_NAMES = [
+    'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
+    'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia'
+]
 DATA_DIR = './ChestX-ray14/images'
 TEST_IMAGE_LIST = './ChestX-ray14/labels/test_list.txt'
 BATCH_SIZE = 32
 
+# %%
 def main():
     #cudnn.benchmark = True
 
@@ -36,7 +42,7 @@ def main():
         model = torch.nn.DataParallel(model).to(device)
 
     if os.path.isfile(CKPT_PATH):
-        print("=> loading checkpoint")
+        print('=> loading checkpoint')
         checkpoint = torch.load(CKPT_PATH, map_location=device)
         state_dict = {}
         for k,v in checkpoint['state_dict'].items():
@@ -47,9 +53,9 @@ def main():
             k = k.replace('conv.2', 'conv2')
             state_dict[k] = v
         model.load_state_dict(state_dict)
-        print("=> loaded checkpoint")
+        print('=> loaded checkpoint')
     else:
-        print("=> no model found")
+        print('=> no model found')
 
     normalize = transforms.Normalize([0.485, 0.456, 0.406],
                                      [0.229, 0.224, 0.225])
@@ -96,8 +102,9 @@ def main():
     for i in range(N_CLASSES):
         print('The AUROC of {} is {:.3f}'.format(CLASS_NAMES[i], AUROCs[i]))
 
+# %%
 def compute_AUCs(gt, pred):
-    """Computes Area Under the Curve (AUC) from prediction scores.
+    '''Computes Area Under the Curve (AUC) from prediction scores.
 
     Args:
         gt: Pytorch tensor on GPU, shape = [n_samples, n_classes]
@@ -108,7 +115,7 @@ def compute_AUCs(gt, pred):
 
     Returns:
         List of AUROCs of all classes.
-    """
+    '''
     AUROCs = []
     gt_np = gt.cpu().numpy()
     pred_np = pred.cpu().numpy()
@@ -116,13 +123,12 @@ def compute_AUCs(gt, pred):
         AUROCs.append(roc_auc_score(gt_np[:, i], pred_np[:, i]))
     return AUROCs
 
+# %%
 class DenseNet121(nn.Module):
-    """Model modified.
-
+    '''Model modified.
     The architecture of our model is the same as standard DenseNet121
     except the classifier layer which has an additional sigmoid function.
-
-    """
+    '''
     def __init__(self, out_size):
         super(DenseNet121, self).__init__()
         self.densenet121 = torchvision.models.densenet121(pretrained=True)
@@ -136,5 +142,8 @@ class DenseNet121(nn.Module):
         x = self.densenet121(x)
         return x
 
+# %%
 if __name__ == '__main__':
     main()
+
+# %%

@@ -1,7 +1,6 @@
-"""
+'''
 Read images and corresponding labels.
-"""
-
+'''
 import torch
 from torch.utils.data import Dataset
 from PIL import Image
@@ -9,16 +8,16 @@ import os
 
 class ChestXrayDataSet(Dataset):
     def __init__(self, data_dir, image_list_file, transform=None):
-        """
+        '''
         Args:
             data_dir: path to image directory.
             image_list_file: path to the file containing images
                 with corresponding labels.
             transform: optional transform to be applied on a sample.
-        """
+        '''
         image_names = []
         labels = []
-        with open(image_list_file, "r") as f:
+        with open(image_list_file, 'r') as f:
             for line in f:
                 items = line.split()
                 image_name= items[0]
@@ -33,13 +32,13 @@ class ChestXrayDataSet(Dataset):
         self.transform = transform
 
     def __getitem__(self, index):
-        """
+        '''
         Args:
             index: the index of item
 
         Returns:
             image and its labels
-        """
+        '''
         image_name = self.image_names[index]
         image = Image.open(image_name).convert('RGB')
         label = self.labels[index]
