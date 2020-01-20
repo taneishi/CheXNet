@@ -29,11 +29,6 @@ BATCH_SIZE = 32
 
 # %%
 def main():
-    #cudnn.benchmark = True
-
-    #torch.cuda.set_enabled_lms(True) 
-    #print('LMS is %s' % ('On' if torch.cuda.get_enabled_lms() else 'Off'))
-
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     # initialize and load the model
