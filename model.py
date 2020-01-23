@@ -1,6 +1,7 @@
 # %%
 import numpy as np
 from sklearn.metrics import roc_auc_score
+from tqdm import tqdm
 import timeit
 import sys
 import os
@@ -17,7 +18,7 @@ from torch.utils.data import DataLoader
 from read_data import ChestXrayDataSet
 
 # %%
-CKPT_PATH = 'model/model.pth.tar'
+MODEL_PATH = 'model/model.pth'
 N_CLASSES = 14
 CLASS_NAMES = [
     'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
@@ -30,27 +31,19 @@ BATCH_SIZE = 32
 # %%
 def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print('Use %s device.' % device)
     
     # initialize and load the model
     model = DenseNet121(N_CLASSES).to(device)
     if torch.cuda.device_count() > 1:
         model = torch.nn.DataParallel(model).to(device)
 
-    if os.path.isfile(CKPT_PATH):
-        print('=> loading checkpoint')
-        checkpoint = torch.load(CKPT_PATH, map_location=device)
-        state_dict = {}
-        for k,v in checkpoint['state_dict'].items():
-            k = k.replace('module.', '')
-            k = k.replace('norm.1', 'norm1')
-            k = k.replace('norm.2', 'norm2')
-            k = k.replace('conv.1', 'conv1')
-            k = k.replace('conv.2', 'conv2')
-            state_dict[k] = v
-        model.load_state_dict(state_dict)
-        print('=> loaded checkpoint')
+    if os.path.isfile(MODEL_PATH):
+        print('=> loading model state')
+        model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+        print('=> loaded model state')
     else:
-        print('=> no model found')
+        print('=> no model state file found')
 
     normalize = transforms.Normalize([0.485, 0.456, 0.406],
                                      [0.229, 0.224, 0.225])
@@ -79,7 +72,7 @@ def main():
     # switch to evaluate mode
     model.eval()
 
-    for i, (inp, target) in enumerate(test_loader):
+    for inp, target in tqdm(test_loader):
         target = target.to(device)
         gt = torch.cat((gt, target), 0)
         bs, n_crops, c, h, w = inp.size()
