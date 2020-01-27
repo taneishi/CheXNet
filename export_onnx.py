@@ -45,7 +45,7 @@ def main():
     dummy_input = torch.randn(BATCH_SIZE, 3, 224, 224)
     torch_out = model(dummy_input)
     torch.onnx.export(model,
-                      dummy_input, 'densenet121.onnx',
+                      dummy_input, 'model/densenet121.onnx',
                       export_params=True,
                       do_constant_folding= True,
                       input_names=['input'],
