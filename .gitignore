@@ -1,6 +1,8 @@
 *.png
 *.tar.gz
 
+annotations
+config
 model/densenet121.bin
 model/densenet121.mapping
 model/densenet121.xml
