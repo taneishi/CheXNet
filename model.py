@@ -1,23 +1,16 @@
-# %%
 import numpy as np
 from sklearn.metrics import roc_auc_score
-from tqdm import tqdm
-import timeit
-import sys
-import os
-
-# %%
 import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
-
-# %%
+import timeit
+import sys
+import os
 from read_data import ChestXrayDataSet
 
-# %%
 MODEL_PATH = 'model/model.pth'
 N_CLASSES = 14
 CLASS_NAMES = [
@@ -28,13 +21,13 @@ DATA_DIR = './ChestX-ray14/images'
 TEST_IMAGE_LIST = './ChestX-ray14/labels/test_list.txt'
 BATCH_SIZE = 32
 
-# %%
 def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print('Use %s device.' % device)
+    print('Using %s device.' % device)
     
     # initialize and load the model
     model = DenseNet121(N_CLASSES).to(device)
+
     if torch.cuda.device_count() > 1:
         model = torch.nn.DataParallel(model).to(device)
 
@@ -49,30 +42,25 @@ def main():
                                      [0.229, 0.224, 0.225])
 
     test_dataset = ChestXrayDataSet(data_dir=DATA_DIR,
-                                    image_list_file=TEST_IMAGE_LIST,
-                                    transform=transforms.Compose([
-                                        transforms.Resize(256),
-                                        transforms.TenCrop(224),
-                                        transforms.Lambda
-                                        (lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])),
-                                        transforms.Lambda
-                                        (lambda crops: torch.stack([normalize(crop) for crop in crops]))
-                                    ]))
-    test_loader = DataLoader(dataset=test_dataset, batch_size=BATCH_SIZE,
-                             shuffle=False, num_workers=10, pin_memory=False)
+            image_list_file=TEST_IMAGE_LIST,
+            transform=transforms.Compose([
+                transforms.Resize(256),
+                transforms.TenCrop(224),
+                transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])),
+                transforms.Lambda(lambda crops: torch.stack([normalize(crop) for crop in crops]))
+            ]))
+    test_loader = DataLoader(dataset=test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=10)
 
     # initialize the ground truth and output tensor
-    gt = torch.FloatTensor()
-    gt = gt.to(device)
-    pred = torch.FloatTensor()
-    pred = pred.to(device)
+    gt = torch.FloatTensor().to(device)
+    pred = torch.FloatTensor().to(device)
 
     now = timeit.default_timer()
 
     # switch to evaluate mode
     model.eval()
 
-    for inp, target in tqdm(test_loader):
+    for inp, target in test_loader:
         target = target.to(device)
         gt = torch.cat((gt, target), 0)
         bs, n_crops, c, h, w = inp.size()
@@ -82,7 +70,7 @@ def main():
         output_mean = output.view(bs, n_crops, -1).mean(1)
         pred = torch.cat((pred, output_mean.data), 0)
 
-    print('Elapsed time: %0.2f sec.' % (timeit.default_timer() - now))
+    print('time: %0.2f sec.' % (timeit.default_timer() - now))
 
     AUROCs = compute_AUCs(gt, pred)
     AUROC_avg = np.array(AUROCs).mean()
@@ -90,7 +78,6 @@ def main():
     for i in range(N_CLASSES):
         print('The AUROC of {} is {:.3f}'.format(CLASS_NAMES[i], AUROCs[i]))
 
-# %%
 def compute_AUCs(gt, pred):
     '''Computes Area Under the Curve (AUC) from prediction scores.
 
@@ -111,7 +98,6 @@ def compute_AUCs(gt, pred):
         AUROCs.append(roc_auc_score(gt_np[:, i], pred_np[:, i]))
     return AUROCs
 
-# %%
 class DenseNet121(nn.Module):
     '''Model modified.
     The architecture of our model is the same as standard DenseNet121
@@ -130,8 +116,5 @@ class DenseNet121(nn.Module):
         x = self.densenet121(x)
         return x
 
-# %%
 if __name__ == '__main__':
     main()
-
-# %%
