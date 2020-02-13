@@ -6,10 +6,10 @@ import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
+from read_data import ChestXrayDataSet
 import timeit
 import sys
 import os
-from read_data import ChestXrayDataSet
 
 MODEL_PATH = 'model/model.pth'
 N_CLASSES = 14
@@ -38,8 +38,9 @@ def main():
     else:
         print('=> no model state file found')
 
-    normalize = transforms.Normalize([0.485, 0.456, 0.406],
-                                     [0.229, 0.224, 0.225])
+    normalize = transforms.Normalize(
+            [0.485, 0.456, 0.406],
+            [0.229, 0.224, 0.225])
 
     test_dataset = ChestXrayDataSet(data_dir=DATA_DIR,
             image_list_file=TEST_IMAGE_LIST,
@@ -48,7 +49,7 @@ def main():
                 transforms.TenCrop(224),
                 transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])),
                 transforms.Lambda(lambda crops: torch.stack([normalize(crop) for crop in crops]))
-            ]))
+                ]))
     test_loader = DataLoader(dataset=test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=10)
 
     # initialize the ground truth and output tensor
@@ -108,9 +109,9 @@ class DenseNet121(nn.Module):
         self.densenet121 = torchvision.models.densenet121(pretrained=True)
         num_ftrs = self.densenet121.classifier.in_features
         self.densenet121.classifier = nn.Sequential(
-            nn.Linear(num_ftrs, out_size),
-            nn.Sigmoid()
-        )
+                nn.Linear(num_ftrs, out_size),
+                nn.Sigmoid()
+                )
 
     def forward(self, x):
         x = self.densenet121(x)

@@ -1,3 +1,8 @@
 *.png
 *.tar.gz
+
+model/densenet121.bin
+model/densenet121.mapping
+model/densenet121.xml
+
 __pycache__

@@ -3,11 +3,9 @@ Export ONNX model
 '''
 import os
 import sys
-import numpy as np
 import torch
 import torch.nn as nn
 import torchvision
-import timeit
 
 MODEL_PATH = 'model/model.pth'
 N_CLASSES = 14

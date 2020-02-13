@@ -17,7 +17,7 @@ class ChestXRayConverter(FileBasedAnnotationConverter):
         parameters = super().parameters()
         parameters.update({
             'data_dir': PathField(is_directory=True, description='Path to sample dataset root directory.')
-        })
+            })
         return parameters
 
     def configure(self):
