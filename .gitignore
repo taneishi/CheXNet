@@ -6,5 +6,7 @@ config
 model/densenet121.bin
 model/densenet121.mapping
 model/densenet121.xml
+model/densenet121_i8.bin
+model/densenet121_i8.xml
 
 __pycache__
