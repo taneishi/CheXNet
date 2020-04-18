@@ -1,0 +1,43 @@
+models:
+  - name: densenet-121-pytorch
+
+    launchers:
+      - framework: dlsdk
+        device: CPU
+        tags:
+          - FP32
+        model:   densenet121.xml
+        weights: densenet121.bin
+        #adapter: chest_xray
+        adapter: person_attributes
+      
+
+    datasets:
+      - name: chestX-ray14
+        data_source: ChestX-ray14/images
+        reader: pillow_imread
+
+        # Image channels must be swapped, because "pillow_imread" reads in RGB, but converted model expect BGR
+        preprocessing:
+          - type: resize
+            size: 256
+            aspect_ratio_scale: greater
+            use_pillow: True
+            interpolation: BILINEAR
+          - type: crop
+            size: 224
+            use_pillow: True
+
+          - type: normalization
+            std: 255
+
+          - type: normalization
+            mean: (0.485, 0.456, 0.406) 
+            std: (0.229, 0.224, 0.225)
+
+        # Reference metric from PyTorch (pytorch v1.0.1, torchvision v0.2.2) top-1 76.13% top-5 92.862%
+        metrics:
+          - type: multi_accuracy
+            label_map: label_map
+
+            
