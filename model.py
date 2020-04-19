@@ -2,7 +2,6 @@ import numpy as np
 from sklearn.metrics import roc_auc_score
 import torch
 import torch.nn as nn
-import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
