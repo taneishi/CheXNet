@@ -8,6 +8,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from read_data import ChestXrayDataSet
 import timeit
+import sys
 import os
 
 MODEL_PATH = 'model/model.pth'
@@ -18,7 +19,8 @@ CLASS_NAMES = [
 ]
 DATA_DIR = './ChestX-ray14/images'
 TEST_IMAGE_LIST = './ChestX-ray14/labels/test_list.txt'
-BATCH_SIZE = 32
+BATCH_SIZE = 4
+MODEL_EXPORT = True
 
 def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -71,6 +73,18 @@ def main():
 
         print('%03d/%03d, time: %6.3f sec' % (index, len(test_loader), (timeit.default_timer() - start_time)))
 
+        if MODEL_EXPORT:
+            torch.onnx.export(model,
+                    input_var, 'model/densenet121.onnx',
+                    export_params=True,
+                    do_constant_folding=True,
+                    input_names=['input'],
+                    output_names=['output'],
+                    dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}},
+                    verbose=False)
+            print('ONNX model exported.')
+            sys.exit()
+            
     AUCs = compute_AUCs(gt, pred)
     AUC_avg = np.array(AUCs).mean()
     print('The average AUC is {AUC_avg:.3f}'.format(AUC_avg=AUC_avg))
