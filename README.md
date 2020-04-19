@@ -12,6 +12,8 @@ The [ChestX-ray14 dataset](http://openaccess.thecvf.com/content_cvpr_2017/papers
 
 - Python 3.4+
 - [PyTorch](http://pytorch.org/) and its dependencies
+- OpenVINO
+- pip install onnx
 
 ## Usage
 

@@ -9,9 +9,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from read_data import ChestXrayDataSet
 import logging as log
-from time import time
 import timeit
-import sys
 import os
 
 # for async
@@ -19,7 +17,6 @@ import os
 # copy code from the file
 from datetime import datetime
 import threading
-
 
 class InferReqWrap:
     def __init__(self, request, req_id, callback_queue, out_blob):
@@ -58,7 +55,6 @@ class InferReqWrap:
 
     def get_prediction(self):
         return self.__pred
-
 
 class InferRequestsQueue:
     def __init__(self, requests, out_blob):
@@ -101,25 +97,20 @@ class InferRequestsQueue:
             self.cv.wait()
         self.cv.release()
 
-
-
 N_CLASSES = 14
-CLASS_NAMES = [ 'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
-                'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia']
+CLASS_NAMES = [
+        'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
+        'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia'
+        ]
 DATA_DIR = './ChestX-ray14/images'
 TEST_IMAGE_LIST = './ChestX-ray14/labels/test_list.txt'
-#TEST_IMAGE_LIST = './ChestX-ray14/labels/test_32.txt'
-#TEST_IMAGE_LIST = './ChestX-ray14/labels/test_128.txt'
-#TEST_IMAGE_LIST = './ChestX-ray14/labels/test_200.txt'
-#TEST_IMAGE_LIST = './ChestX-ray14/labels/test_35.txt'
-#TEST_IMAGE_LIST = './ChestX-ray14/labels/test_1000.txt'
 BATCH_SIZE = 32
 N_CROPS = 10
 NUM_REQUESTS=8
 
 def main():
-    #model_xml = 'densenet121_i8.xml'
-    model_xml = 'densenet121.xml'
+    #model_xml = 'model/densenet121_i8.xml'
+    model_xml = 'model/densenet121.xml'
     model_bin = os.path.splitext(model_xml)[0]+'.bin'
 
     log.info('Creating Inference Engine')
@@ -166,8 +157,8 @@ def main():
     print('reqeuest len', len(infer_requests))
     request_queue = InferRequestsQueue(infer_requests, out_blob)
 
-    now = timeit.default_timer()
-    for i , (inp, target) in enumerate(test_loader):
+    for i, (inp, target) in enumerate(test_loader):
+        start_time = timeit.default_timer()
         # gt = torch.cat((gt, target), 0)
         bs, n_crops, c, h, w = inp.size()
         images = inp.view(-1, c, h, w).numpy()

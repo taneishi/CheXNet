@@ -8,7 +8,6 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from read_data import ChestXrayDataSet
 import timeit
-import sys
 import os
 
 MODEL_PATH = 'model/model.pth'
@@ -56,28 +55,27 @@ def main():
     gt = torch.FloatTensor().to(device)
     pred = torch.FloatTensor().to(device)
 
-    now = timeit.default_timer()
-
     # switch to evaluate mode
     model.eval()
 
-    for inp, target in test_loader:
+    for index, (data, target) in enumerate(test_loader):
+        start_time = timeit.default_timer()
         target = target.to(device)
         gt = torch.cat((gt, target), 0)
-        bs, n_crops, c, h, w = inp.size()
+        bs, n_crops, c, h, w = data.size()
         with torch.no_grad():
-            input_var = torch.autograd.Variable(inp.view(-1, c, h, w).to(device))
+            input_var = torch.autograd.Variable(data.view(-1, c, h, w).to(device))
             output = model(input_var)
         output_mean = output.view(bs, n_crops, -1).mean(1)
         pred = torch.cat((pred, output_mean.data), 0)
 
-    print('time: %0.2f sec.' % (timeit.default_timer() - now))
+        print('%03d/%03d, time: %6.3f sec' % (index, len(test_loader), (timeit.default_timer() - start_time)))
 
-    AUROCs = compute_AUCs(gt, pred)
-    AUROC_avg = np.array(AUROCs).mean()
-    print('The average AUROC is {AUROC_avg:.3f}'.format(AUROC_avg=AUROC_avg))
+    AUCs = compute_AUCs(gt, pred)
+    AUC_avg = np.array(AUCs).mean()
+    print('The average AUC is {AUC_avg:.3f}'.format(AUC_avg=AUC_avg))
     for i in range(N_CLASSES):
-        print('The AUROC of {} is {:.3f}'.format(CLASS_NAMES[i], AUROCs[i]))
+        print('The AUC of {} is {:.3f}'.format(CLASS_NAMES[i], AUCs[i]))
 
 def compute_AUCs(gt, pred):
     '''Computes Area Under the Curve (AUC) from prediction scores.
@@ -90,14 +88,14 @@ def compute_AUCs(gt, pred):
           confidence values, or binary decisions.
 
     Returns:
-        List of AUROCs of all classes.
+        List of ROC-AUCs of all classes.
     '''
-    AUROCs = []
+    AUCs = []
     gt_np = gt.cpu().numpy()
     pred_np = pred.cpu().numpy()
     for i in range(N_CLASSES):
-        AUROCs.append(roc_auc_score(gt_np[:, i], pred_np[:, i]))
-    return AUROCs
+        AUCs.append(roc_auc_score(gt_np[:, i], pred_np[:, i]))
+    return AUCs
 
 class DenseNet121(nn.Module):
     '''Model modified.

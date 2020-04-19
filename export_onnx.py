@@ -1,11 +1,10 @@
 '''
 Export ONNX model
 '''
-import os
-import sys
 import torch
 import torch.nn as nn
 import torchvision
+import os
 
 MODEL_PATH = 'model/model.pth'
 N_CLASSES = 14

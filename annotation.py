@@ -2,8 +2,9 @@ from accuracy_checker.annotation_converters.convert import main
 from accuracy_checker.annotation_converters.format_converter import FileBasedAnnotationConverter, ConverterReturn
 from accuracy_checker.representation import MultiLabelRecognitionAnnotation, MultiLabelRecognitionPrediction
 from accuracy_checker.topology_types import ImageClassification
-from accuracy_checker.config import StringField, PathField, ConfigError
+from accuracy_checker.config import PathField
 from accuracy_checker.utils import get_path
+import os
 
 from model import CLASS_NAMES
 
@@ -40,13 +41,13 @@ class ChestXRayConverter(FileBasedAnnotationConverter):
         dataset_directory = get_path(self.data_dir, is_directory=True)
 
         # read and convert annotation
-        image_list_file = dataset_directory / 'labels/val_list.txt'
-        images_dir = dataset_directory / 'images'
+        image_list_file = os.path.join(dataset_directory, 'labels', 'val_list.txt')
+        images_dir = os.path.join(dataset_directory, 'images')
         
         image_names = []
         labels = []
         annotations= []
-        with open(str(image_list_file), 'r') as f:
+        with open(image_list_file, 'r') as f:
             for line in f:
                 items = line.split()
                 image_name = items[0]
