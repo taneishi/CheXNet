@@ -41,8 +41,8 @@ class ChestXRayConverter(FileBasedAnnotationConverter):
         dataset_directory = get_path(self.data_dir, is_directory=True)
 
         # read and convert annotation
-        image_list_file = os.path.join(dataset_directory, 'labels', 'val_list.txt')
-        images_dir = os.path.join(dataset_directory, 'images')
+        image_list_file = os.path.join(str(dataset_directory), 'labels', 'val_list.txt')
+        images_dir = os.path.join(str(dataset_directory), 'images')
         
         image_names = []
         labels = []

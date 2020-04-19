@@ -33,7 +33,6 @@ def five_crop(img, size):
     return (tl, tr)
     
 def main():
-    model_xml = 'model/densenet121_i8.xml'
     model_xml = 'model/densenet121.xml'
     model_bin = os.path.splitext(model_xml)[0]+'.bin'
 
