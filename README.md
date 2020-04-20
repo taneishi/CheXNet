@@ -1,4 +1,4 @@
-# CheXNet for Classification and Localization of Thoracic Diseases
+# Classification and Localization of Thoracic Diseases in PyTorch
 
 This is a Python3 (Pytorch) reimplementation of [CheXNet](https://stanfordmlgroup.github.io/projects/chexnet/). The model takes a chest X-ray image as input and outputs the probability of each thoracic disease along with a likelihood map of pathologies.
 
