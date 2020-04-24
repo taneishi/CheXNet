@@ -10,6 +10,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from read_data import ChestXrayDataSet
 import timeit
+import sys
 import os
 
 N_CLASSES = 14
@@ -32,8 +33,8 @@ def five_crop(img, size):
     tr = img.crop((image_width - crop_width, 0, image_width, crop_height))
     return (tl, tr)
     
-def main():
-    model_xml = 'model/densenet121.xml'
+def main(modelfile):
+    model_xml = os.path.join('model', modelfile)
     model_bin = os.path.splitext(model_xml)[0]+'.bin'
 
     log.info('Creating Inference Engine')
@@ -125,4 +126,12 @@ def compute_AUCs(gt, pred):
     return AUCs
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'fp32':
+            main(modelfile='densenet121.xml')
+        elif sys.argv[1] == 'int8':
+            main(modelfile='densenet121_i8.xml')
+        else:
+            sys.exit('%s [fp32|int8]' % sys.argv[0])
+    else:
+        sys.exit('%s [fp32|int8]' % sys.argv[0])

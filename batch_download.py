@@ -1,7 +1,7 @@
-# Download the 56 zip files in Images_png in batches
+# Download the 12 tar.gz files in Images_png in batches
 import urllib.request, urllib.parse, urllib.error
 
-# URLs for the zip files
+# URLs for the tar.gz files
 links = [
         'https://nihcc.box.com/shared/static/vfk49d74nhbxq3nqjg0900w5nvkorp5c.gz',
         'https://nihcc.box.com/shared/static/i28rlmbvmfjbl8p2n3ril0pptcmcu9d1.gz',
@@ -17,9 +17,9 @@ links = [
         'https://nihcc.box.com/shared/static/ioqwiy20ihqwyr8pf4c24eazhh281pbu.gz'
         ]
 
-for idx, link in enumerate(links):
-    fn = 'images_%02d.tar.gz' % (idx+1)
-    print('downloading', fn, '...')
-    urllib.request.urlretrieve(link, fn)  # download the zip file
+for index, link in enumerate(links):
+    filename = 'images_%02d.tar.gz' % (index+1)
+    print('downloading %s...' % filename)
+    urllib.request.urlretrieve(link, filename) # download the tar.gz file
 
 print('Download complete. Please check the checksums')
