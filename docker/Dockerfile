@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 COPY l_openvino_toolkit_p_2019.3.376.tgz /tmp/
+#COPY l_openvino_toolkit_p_2020.2.120.tgz /tmp/
 
 RUN mkdir -p $TEMP_DIR && cd $TEMP_DIR && \
     tar xf /tmp/l_openvino_toolkit*.tgz && \
@@ -27,4 +28,4 @@ RUN cd $INSTALL_DIR/install_dependencies && \
 
 RUN pip3 install torch torchvision scikit-learn shapely yamlloader nibabel tqdm xmltodict progress py-cpuinfo
 
-# docker run -it --rm --ipc=host -m 64gb -v /path/to/CheXNet:/CheXNet openvino
+# docker run -it --rm --ipc=host -m 64gb -v ${PWD}:/CheXNet openvino
