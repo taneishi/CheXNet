@@ -48,7 +48,7 @@ We followed the training strategy described in the official paper, and a ten cro
 
 ## TODO
 
-- [ ] Training exmaple
+- [ ] Training
 
 ## Contributions
 
