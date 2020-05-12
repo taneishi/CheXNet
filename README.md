@@ -46,6 +46,10 @@ We followed the training strategy described in the official paper, and a ten cro
 | Pleural Thickening |                  0.708                   |                  0.765                   |                  0.8062                  |         0.7831          |       0.7914       |
 |       Hernia       |                  0.767                   |                  0.914                   |                  0.9164                  |         0.9104          |       0.9206       |
 
+## TODO
+
+- [ ] Training exmaple
+
 ## Contributions
 
 This work was collaboratively conducted by Xinyu Weng, Nan Zhuang, Jingjing Tian and Yingcheng Liu.
