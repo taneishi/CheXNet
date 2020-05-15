@@ -1,6 +1,4 @@
-'''
-The main CheXNet model implementation.
-'''
+# The main CheXNet model implementation.
 import numpy as np
 from sklearn.metrics import roc_auc_score, accuracy_score
 import logging as log
@@ -20,6 +18,7 @@ CLASS_NAMES = [
         ]
 DATA_DIR = './ChestX-ray14/images'
 TEST_IMAGE_LIST = './ChestX-ray14/labels/test_list.txt'
+
 BATCH_SIZE = 32
 N_CROPS = 10
 
@@ -40,6 +39,7 @@ def main(modelfile):
     log.info('Creating Inference Engine')
     ie = IECore()
     net = IENetwork(model=model_xml, weights=model_bin)
+
     log.info('Preparing input blobs')
     input_blob = next(iter(net.inputs))
     out_blob = next(iter(net.outputs))
@@ -107,14 +107,10 @@ def roc_auc_score_FIXED(y_true, y_pred):
         
 def compute_AUCs(gt, pred):
     '''Computes Area Under the Curve (AUC) from prediction scores.
-
     Args:
-        gt: Pytorch tensor on GPU, shape = [n_samples, n_classes]
-            true binary labels.
-        pred: Pytorch tensor on GPU, shape = [n_samples, n_classes]
-            can either be probability estimates of the positive class,
+        gt: Pytorch tensor on GPU, shape = [n_samples, n_classes] true binary labels.
+        pred: Pytorch tensor on GPU, shape = [n_samples, n_classes] can either be probability estimates of the positive class,
             confidence values, or binary decisions.
-
     Returns:
         List of ROC-AUCs of all classes.
     '''

@@ -18,11 +18,13 @@ CLASS_NAMES = [
 ]
 DATA_DIR = './ChestX-ray14/images'
 TEST_IMAGE_LIST = './ChestX-ray14/labels/test_list.txt'
-BATCH_SIZE = 4
-MODEL_EXPORT = True
+
+BATCH_SIZE = 32
+MODEL_EXPORT = False
 
 def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cpu')
     print('Using %s device.' % device)
     
     # initialize and load the model
@@ -92,14 +94,10 @@ def main():
 
 def compute_AUCs(gt, pred):
     '''Computes Area Under the Curve (AUC) from prediction scores.
-
     Args:
-        gt: Pytorch tensor on GPU, shape = [n_samples, n_classes]
-          true binary labels.
-        pred: Pytorch tensor on GPU, shape = [n_samples, n_classes]
-          can either be probability estimates of the positive class,
-          confidence values, or binary decisions.
-
+        gt: Pytorch tensor on GPU, shape = [n_samples, n_classes] true binary labels.
+        pred: Pytorch tensor on GPU, shape = [n_samples, n_classes] can either be probability estimates of the positive class,
+        confidence values, or binary decisions.
     Returns:
         List of ROC-AUCs of all classes.
     '''

@@ -1,6 +1,4 @@
-INSTALL_DIR=/opt/intel/openvino
-
-source ${INSTALL_DIR}/bin/setupvars.sh
+#
 
 mkdir -p annotations
 
