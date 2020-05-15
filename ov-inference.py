@@ -19,31 +19,23 @@ CLASS_NAMES = [
 DATA_DIR = './ChestX-ray14/images'
 TEST_IMAGE_LIST = './ChestX-ray14/labels/test_list.txt'
 
-BATCH_SIZE = 32
 N_CROPS = 10
 
-def crop(img, top, left, height, width):
-    return img.crop((left,top, left+width, top+height))
-
-def five_crop(img, size):
-    image_width, image_height = img.width
-    crop_heigh, crop_width = size
-    tl = img.crop((0,0, crop_width, crop_height))
-    tr = img.crop((image_width - crop_width, 0, image_width, crop_height))
-    return (tl, tr)
-    
 def main(modelfile):
+    batch_size = 32
+
     model_xml = os.path.join('model', modelfile)
-    model_bin = os.path.splitext(model_xml)[0]+'.bin'
+    model_bin = model_xml.replace('xml', 'bin')
 
     log.info('Creating Inference Engine')
     ie = IECore()
-    net = IENetwork(model=model_xml, weights=model_bin)
+    #net = IENetwork(model=model_xml, weights=model_bin)
+    net = ie.read_network(model=model_xml, weights=model_bin)
 
     log.info('Preparing input blobs')
     input_blob = next(iter(net.inputs))
     out_blob = next(iter(net.outputs))
-    net.batch_size = (BATCH_SIZE*N_CROPS)
+    net.batch_size = (batch_size * N_CROPS)
 
     n, c, h, w = net.inputs[input_blob].shape
 
@@ -62,39 +54,44 @@ def main(modelfile):
                 transforms.Lambda(lambda crops: torch.stack([normalize(crop) for crop in crops]))
                 ]))
     
-    test_loader = DataLoader(dataset=test_dataset, batch_size=BATCH_SIZE,
-            shuffle=False, num_workers=10, pin_memory=False)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False, pin_memory=False)
 
     gt = torch.FloatTensor()
     pred = torch.FloatTensor()
     
     # images = np.ndarray(shape=(n,c,h,w))
 
-    #loading model to the plugin
+    # loading model to the plugin
     log.info('Loading model to the plugin')
     #exec_net = ie.load_network(network=net, device_name='CPU', config={'DYN_BATCH_ENABLED': 'YES'})
     exec_net = ie.load_network(network=net, device_name='CPU')
 
     for index, (data, target) in enumerate(test_loader):
         start_time = timeit.default_timer()
+
         gt = torch.cat((gt, target), 0)
         bs, n_crops, c, h, w = data.size()
+
         images = data.view(-1, c, h, w).numpy()
-        if bs != BATCH_SIZE:
-            images2 = np.zeros(shape=(BATCH_SIZE* n_crops, c, h, w))
+
+        if bs != batch_size:
+            images2 = np.zeros(shape=(batch_size * n_crops, c, h, w))
             images2[:bs*n_crops, :c, :h, :w] = images
             images = images2
+
         res = exec_net.infer(inputs={input_blob: images})
         res = res[out_blob]
-        res = res.reshape(BATCH_SIZE, n_crops,-1)
+        res = res.reshape(batch_size, n_crops,-1)
         res = np.mean(res, axis=1)
-        if bs != BATCH_SIZE:
+
+        if bs != batch_size:
             res = res[:bs, :res.shape[1]]
+
         pred = torch.cat((pred, torch.from_numpy(res)), 0)
         
         print('%03d/%03d, time: %6.3f sec' % (index, len(test_loader), (timeit.default_timer() - start_time)))
         
-    AUCs = compute_AUCs(gt, pred)
+    AUCs = [roc_auc_score_FIXED(gt.cpu()[:, i], pred.cpu()[:, i]) for i in range(N_CLASSES)]
     AUC_avg = np.array(AUCs).mean()
     print('The average AUC is {AUC_avg:.3f}'.format(AUC_avg=AUC_avg))
     for i in range(N_CLASSES):
@@ -105,14 +102,6 @@ def roc_auc_score_FIXED(y_true, y_pred):
         return accuracy_score(y_true, np.rint(y_pred))
     return roc_auc_score(y_true, y_pred)
         
-def compute_AUCs(gt, pred):
-    AUCs = []
-    gt_np = gt.cpu()
-    pred_np = pred.cpu()
-    for i in range(N_CLASSES):
-        AUCs.append(roc_auc_score_FIXED(gt_np[:, i], pred_np[:, i]))
-    return AUCs
-
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         if sys.argv[1] == 'fp32':
