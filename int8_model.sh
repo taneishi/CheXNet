@@ -1,4 +1,5 @@
-#
+# int8 model
+
 mkdir -p annotations
 
 python3 annotation.py chest_xray --annotation_file ChestX-ray14/labels/val_list.txt -ss 200 \

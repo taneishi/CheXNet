@@ -220,8 +220,8 @@ def compute_AUCs(gt, pred):
         List of AUROCs of all classes.
     '''
     AUROCs = []
-    gt_np = gt.cpu().numpy()
-    pred_np = pred.cpu().numpy()
+    gt_np = gt.cpu()
+    pred_np = pred.cpu()
     for i in range(N_CLASSES):
         AUROCs.append(roc_auc_score_FIXED(gt_np[:, i], pred_np[:, i]))
     return AUROCs

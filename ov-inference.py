@@ -106,17 +106,9 @@ def roc_auc_score_FIXED(y_true, y_pred):
     return roc_auc_score(y_true, y_pred)
         
 def compute_AUCs(gt, pred):
-    '''Computes Area Under the Curve (AUC) from prediction scores.
-    Args:
-        gt: Pytorch tensor on GPU, shape = [n_samples, n_classes] true binary labels.
-        pred: Pytorch tensor on GPU, shape = [n_samples, n_classes] can either be probability estimates of the positive class,
-            confidence values, or binary decisions.
-    Returns:
-        List of ROC-AUCs of all classes.
-    '''
     AUCs = []
-    gt_np = gt.cpu().numpy()
-    pred_np = pred.cpu().numpy()
+    gt_np = gt.cpu()
+    pred_np = pred.cpu()
     for i in range(N_CLASSES):
         AUCs.append(roc_auc_score_FIXED(gt_np[:, i], pred_np[:, i]))
     return AUCs

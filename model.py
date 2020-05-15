@@ -20,15 +20,27 @@ CLASS_NAMES = [
 DATA_DIR = './ChestX-ray14/images'
 TEST_IMAGE_LIST = './ChestX-ray14/labels/test_list.txt'
 
+def export_onnx(model):
+    torch.onnx.export(model,
+            input_var, os.path.join('model', 'densenet121.onnx'),
+            export_params=True,
+            do_constant_folding=True,
+            input_names=['input'],
+            output_names=['output'],
+            dynamic_axes={
+                'input': {0: 'batch_size'}, 
+                'output': {0: 'batch_size'}},
+            verbose=False)
+    sys.exit('ONNX model exported.')
+
 def main(args):
     if args.export_model:
         device = torch.device('cpu')
-        batch_size = 32
+        batch_size = 1
     else:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        batch_size = 1
+        batch_size = 48
     print('Using %s device.' % device)
-
     
     # initialize and load the model
     model = DenseNet121(N_CLASSES).to(device)
@@ -55,7 +67,7 @@ def main(args):
                 transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])),
                 transforms.Lambda(lambda crops: torch.stack([normalize(crop) for crop in crops]))
                 ]))
-    test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False, num_workers=10)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
 
     # initialize the ground truth and output tensor
     gt = torch.FloatTensor().to(device)
@@ -66,49 +78,33 @@ def main(args):
 
     for index, (data, target) in enumerate(test_loader):
         start_time = timeit.default_timer()
-        target = target.to(device)
-        gt = torch.cat((gt, target), 0)
-        bs, n_crops, c, h, w = data.size()
-        with torch.no_grad():
-            input_var = torch.autograd.Variable(data.view(-1, c, h, w).to(device))
-            output = model(input_var)
-        output_mean = output.view(bs, n_crops, -1).mean(1)
-        pred = torch.cat((pred, output_mean.data), 0)
 
-        print('%03d/%03d, time: %6.3f sec' % (index, len(test_loader), (timeit.default_timer() - start_time)))
+        target = target.to(device)
+        bs, n_crops, c, h, w = data.size()
+        data = data.view(-1, c, h, w).to(device)
+
+        with torch.no_grad():
+            output = model(data)
+
+        output_mean = output.view(bs, n_crops, -1).mean(1)
+
+        gt = torch.cat((gt, target))
+        pred = torch.cat((pred, output_mean))
+
+        print('\rbatch %03d/%03d %6.3f sec' % (index, len(test_loader), (timeit.default_timer() - start_time)))
 
         if args.export_model:
-            torch.onnx.export(model,
-                    input_var, 'model/densenet121.onnx',
-                    export_params=True,
-                    do_constant_folding=True,
-                    input_names=['input'],
-                    output_names=['output'],
-                    dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}},
-                    verbose=False)
-            sys.exit('ONNX model exported.')
-            
-    AUCs = compute_AUCs(gt, pred)
-    AUC_avg = np.array(AUCs).mean()
-    print('The average AUC is {AUC_avg:.3f}'.format(AUC_avg=AUC_avg))
-    for i in range(N_CLASSES):
-        print('The AUC of {} is {:.3f}'.format(CLASS_NAMES[i], AUCs[i]))
+            export_onnx(model)
 
-def compute_AUCs(gt, pred):
-    '''Computes Area Under the Curve (AUC) from prediction scores.
-    Args:
-        gt: Pytorch tensor on GPU, shape = [n_samples, n_classes] true binary labels.
-        pred: Pytorch tensor on GPU, shape = [n_samples, n_classes] can either be probability estimates of the positive class,
-        confidence values, or binary decisions.
-    Returns:
-        List of ROC-AUCs of all classes.
-    '''
-    AUCs = []
-    gt_np = gt.cpu().numpy()
-    pred_np = pred.cpu().numpy()
+        if index == 32:
+            break
+            
+    AUCs = [roc_auc_score(gt.cpu()[:, i], pred.cpu()[:, i]) for i in range(N_CLASSES)]
+    AUC_avg = np.mean(AUCs)
+    print('The average AUC is %6.3f' % AUC_avg)
+
     for i in range(N_CLASSES):
-        AUCs.append(roc_auc_score(gt_np[:, i], pred_np[:, i]))
-    return AUCs
+        print('The AUC of %s is %6.3f' % (CLASS_NAMES[i], AUCs[i]))
 
 class DenseNet121(nn.Module):
     def __init__(self, out_size):
@@ -117,8 +113,7 @@ class DenseNet121(nn.Module):
         num_features = self.densenet121.classifier.in_features
         self.densenet121.classifier = nn.Sequential(
                 nn.Linear(num_features, out_size),
-                nn.Sigmoid()
-                )
+                nn.Sigmoid())
 
     def forward(self, x):
         x = self.densenet121(x)

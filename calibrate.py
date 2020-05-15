@@ -11,8 +11,7 @@ class ChestXAdapter(Adapter):
         parameters = super().parameters()
         parameters.update({
             'attributes_recognition_out': StringField(
-                description="Output layer name for attributes recognition.", optional=True
-            )
+                description="Output layer name for attributes recognition.", optional=True)
         })
         return parameters
 
