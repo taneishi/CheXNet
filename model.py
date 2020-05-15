@@ -6,6 +6,7 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from read_data import ChestXrayDataSet
+import argparse
 import timeit
 import sys
 import os
@@ -19,13 +20,15 @@ CLASS_NAMES = [
 DATA_DIR = './ChestX-ray14/images'
 TEST_IMAGE_LIST = './ChestX-ray14/labels/test_list.txt'
 
-BATCH_SIZE = 32
-MODEL_EXPORT = False
-
-def main():
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    device = torch.device('cpu')
+def main(args):
+    if args.export_model:
+        device = torch.device('cpu')
+        batch_size = 32
+    else:
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        batch_size = 1
     print('Using %s device.' % device)
+
     
     # initialize and load the model
     model = DenseNet121(N_CLASSES).to(device)
@@ -52,7 +55,7 @@ def main():
                 transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])),
                 transforms.Lambda(lambda crops: torch.stack([normalize(crop) for crop in crops]))
                 ]))
-    test_loader = DataLoader(dataset=test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=10)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False, num_workers=10)
 
     # initialize the ground truth and output tensor
     gt = torch.FloatTensor().to(device)
@@ -74,7 +77,7 @@ def main():
 
         print('%03d/%03d, time: %6.3f sec' % (index, len(test_loader), (timeit.default_timer() - start_time)))
 
-        if MODEL_EXPORT:
+        if args.export_model:
             torch.onnx.export(model,
                     input_var, 'model/densenet121.onnx',
                     export_params=True,
@@ -83,8 +86,7 @@ def main():
                     output_names=['output'],
                     dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}},
                     verbose=False)
-            print('ONNX model exported.')
-            sys.exit()
+            sys.exit('ONNX model exported.')
             
     AUCs = compute_AUCs(gt, pred)
     AUC_avg = np.array(AUCs).mean()
@@ -109,16 +111,12 @@ def compute_AUCs(gt, pred):
     return AUCs
 
 class DenseNet121(nn.Module):
-    '''Model modified.
-    The architecture of our model is the same as standard DenseNet121
-    except the classifier layer which has an additional sigmoid function.
-    '''
     def __init__(self, out_size):
         super(DenseNet121, self).__init__()
         self.densenet121 = torchvision.models.densenet121(pretrained=True)
-        num_ftrs = self.densenet121.classifier.in_features
+        num_features = self.densenet121.classifier.in_features
         self.densenet121.classifier = nn.Sequential(
-                nn.Linear(num_ftrs, out_size),
+                nn.Linear(num_features, out_size),
                 nn.Sigmoid()
                 )
 
@@ -127,4 +125,8 @@ class DenseNet121(nn.Module):
         return x
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-export_model', action='store_true', default=False)
+    args = parser.parse_args()
+
+    main(args)
