@@ -1,10 +1,10 @@
 import numpy as np
-from sklearn.metrics import roc_auc_score
 import torch
 import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
+from sklearn.metrics import roc_auc_score
 from read_data import ChestXrayDataSet
 import argparse
 import timeit
@@ -20,13 +20,11 @@ CLASS_NAMES = [
 DATA_DIR = './ChestX-ray14/images'
 TEST_IMAGE_LIST = './ChestX-ray14/labels/test_list.txt'
 
-def export_onnx(model):
-    torch.onnx.export(model,
-            input_var, os.path.join('model', 'densenet121.onnx'),
-            export_params=True,
-            do_constant_folding=True,
-            input_names=['input'],
-            output_names=['output'],
+def export_onnx(model, data):
+    torch.onnx.export(model, data, 
+            os.path.join('model', 'densenet121.onnx'),
+            export_params=True, do_constant_folding=True,
+            input_names=['input'], output_names=['output'],
             dynamic_axes={
                 'input': {0: 'batch_size'}, 
                 'output': {0: 'batch_size'}},
@@ -36,7 +34,7 @@ def export_onnx(model):
 def main(args):
     if args.export_model:
         device = torch.device('cpu')
-        batch_size = 1
+        batch_size = 64
     else:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         batch_size = 48
@@ -49,11 +47,10 @@ def main(args):
         model = torch.nn.DataParallel(model).to(device)
 
     if os.path.isfile(MODEL_PATH):
-        print('=> loading model state')
         model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
-        print('=> loaded model state')
+        print('model state has loaded')
     else:
-        print('=> no model state file found')
+        print('=> model state file not found')
 
     normalize = transforms.Normalize(
             [0.485, 0.456, 0.406],
@@ -94,7 +91,7 @@ def main(args):
         print('\rbatch %03d/%03d %6.3f sec' % (index, len(test_loader), (timeit.default_timer() - start_time)))
 
         if args.export_model:
-            export_onnx(model)
+            export_onnx(model, data)
 
         if index == 32:
             break

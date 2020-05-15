@@ -1,6 +1,4 @@
-'''
-Read images and corresponding labels.
-'''
+# Read images and corresponding labels.
 import torch
 from torch.utils.data import Dataset
 from PIL import Image
@@ -20,10 +18,8 @@ class ChestXrayDataSet(Dataset):
         with open(image_list_file, 'r') as f:
             for line in f:
                 items = line.split()
-                image_name = items[0]
-                label = items[1:]
-                label = [int(i) for i in label]
-                image_name = os.path.join(data_dir, image_name)
+                label = [int(i) for i in items[1:]]
+                image_name = os.path.join(data_dir, items[0])
                 image_names.append(image_name)
                 labels.append(label)
 
@@ -35,7 +31,6 @@ class ChestXrayDataSet(Dataset):
         '''
         Args:
             index: the index of item
-
         Returns:
             image and its labels
         '''
@@ -48,4 +43,3 @@ class ChestXrayDataSet(Dataset):
 
     def __len__(self):
         return len(self.image_names)
-
