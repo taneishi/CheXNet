@@ -118,7 +118,7 @@ class DenseNet121(nn.Module):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-export_model', action='store_true', default=False)
+    parser.add_argument('-export_model', action='store_true')
     args = parser.parse_args()
 
     main(args)

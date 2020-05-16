@@ -2,7 +2,7 @@
 The main CheXNet model implementation.
 '''
 import numpy as np
-from sklearn.metrics import roc_auc_score, accuracy_score
+from sklearn.metrics import roc_auc_score
 from openvino.inference_engine import IENetwork, IECore
 import torch
 import torchvision.transforms as transforms
@@ -195,36 +195,12 @@ def main():
         
     print('Elapsed time: %0.2f sec.' % (timeit.default_timer() - now))
 
-    AUROCs = compute_AUCs(gt, pred)
-    AUROC_avg = np.array(AUROCs).mean()
+    AUCs = [roc_auc_score(gt.cpu()[:, i], pred.cpu()[:, i]) for i in range(N_CLASSES)]
+    AUC_avg = np.array(AUCs).mean()
+
     print('The average AUROC is {AUROC_avg:.3f}'.format(AUROC_avg=AUROC_avg))
     for i in range(N_CLASSES):
         print('The AUROC of {} is {:.3f}'.format(CLASS_NAMES[i], AUROCs[i]))
-
-def roc_auc_score_FIXED(y_true, y_pred):
-    if len(np.unique(y_true)) == 1:
-        return accuracy_score(y_true, np.rint(y_pred))
-    return roc_auc_score(y_true, y_pred)
-
-def compute_AUCs(gt, pred):
-    '''Computes Area Under the Curve (AUC) from prediction scores.
-
-    Args:
-        gt: Pytorch tensor on GPU, shape = [n_samples, n_classes]
-          true binary labels.
-        pred: Pytorch tensor on GPU, shape = [n_samples, n_classes]
-          can either be probability estimates of the positive class,
-          confidence values, or binary decisions.
-
-    Returns:
-        List of AUROCs of all classes.
-    '''
-    AUROCs = []
-    gt_np = gt.cpu()
-    pred_np = pred.cpu()
-    for i in range(N_CLASSES):
-        AUROCs.append(roc_auc_score_FIXED(gt_np[:, i], pred_np[:, i]))
-    return AUROCs
 
 if __name__ == '__main__':
     main()
