@@ -32,12 +32,12 @@ def export_onnx(model, data):
     sys.exit('ONNX model exported.')
 
 def main(args):
+    batch_size = 32
+
     if args.export_model:
         device = torch.device('cpu')
-        batch_size = 64
     else:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        batch_size = 48
     print('Using %s device.' % device)
     
     # initialize and load the model

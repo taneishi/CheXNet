@@ -9,4 +9,4 @@ python3 calibrate.py --config config/chestx.yml -d config/def.yml \
     -M ${INTEL_OPENVINO_DIR}/deployment_tools/model_optimizer \
     --models model --annotations annotations --batch_size 64
 
-python3 ov-inference.py int8
+python3 ov-inference.py -int8

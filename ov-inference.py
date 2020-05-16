@@ -1,12 +1,13 @@
 # The main CheXNet model implementation.
 import numpy as np
-from sklearn.metrics import roc_auc_score, accuracy_score
+from sklearn.metrics import roc_auc_score
 import logging as log
 from openvino.inference_engine import IENetwork, IECore
 import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from read_data import ChestXrayDataSet
+import argparse
 import timeit
 import sys
 import os
@@ -29,8 +30,8 @@ def main(modelfile):
 
     log.info('Creating Inference Engine')
     ie = IECore()
-    #net = IENetwork(model=model_xml, weights=model_bin)
-    net = ie.read_network(model=model_xml, weights=model_bin)
+    net = IENetwork(model=model_xml, weights=model_bin)
+    #net = ie.read_network(model=model_xml, weights=model_bin)
 
     log.info('Preparing input blobs')
     input_blob = next(iter(net.inputs))
@@ -90,25 +91,27 @@ def main(modelfile):
         pred = torch.cat((pred, torch.from_numpy(res)), 0)
         
         print('%03d/%03d, time: %6.3f sec' % (index, len(test_loader), (timeit.default_timer() - start_time)))
+
+        if index == 32:
+            break
         
-    AUCs = [roc_auc_score_FIXED(gt.cpu()[:, i], pred.cpu()[:, i]) for i in range(N_CLASSES)]
+    AUCs = [roc_auc_score(gt.cpu()[:, i], pred.cpu()[:, i]) for i in range(N_CLASSES)]
     AUC_avg = np.array(AUCs).mean()
     print('The average AUC is {AUC_avg:.3f}'.format(AUC_avg=AUC_avg))
     for i in range(N_CLASSES):
         print('The AUC of {} is {:.3f}'.format(CLASS_NAMES[i], AUCs[i]))
 
-def roc_auc_score_FIXED(y_true, y_pred):
-    if len(np.unique(y_true)) == 1:
-        return accuracy_score(y_true, np.rint(y_pred))
-    return roc_auc_score(y_true, y_pred)
-        
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        if sys.argv[1] == 'fp32':
-            main(modelfile='densenet121.xml')
-        elif sys.argv[1] == 'int8':
-            main(modelfile='densenet121_i8.xml')
-        else:
-            sys.exit('%s [fp32|int8]' % sys.argv[0])
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-fp32', action='store_true')
+    parser.add_argument('-int8', action='store_true')
+
+    args = parser.parse_args()
+
+    if args.fp32:
+        main(modelfile='densenet121.xml')
+    elif args.int8:
+        main(modelfile='densenet121_i8.xml')
     else:
-        sys.exit('%s [fp32|int8]' % sys.argv[0])
+        parser.print_help()
