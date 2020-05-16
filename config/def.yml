@@ -3,4 +3,3 @@ datasets:
     annotation: chestx.pickle
     dataset_meta: chestx.json
     metrics: multi_accuracy
-    

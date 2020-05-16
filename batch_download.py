@@ -1,5 +1,5 @@
-# Download the 12 tar.gz files in Images_png in batches
-import urllib.request, urllib.parse, urllib.error
+# Download the 12 tgz files in batches
+import urllib.request
 
 # URLs for the tar.gz files
 links = [
@@ -17,9 +17,9 @@ links = [
         'https://nihcc.box.com/shared/static/ioqwiy20ihqwyr8pf4c24eazhh281pbu.gz'
         ]
 
-for index, link in enumerate(links):
-    filename = 'images_%02d.tar.gz' % (index+1)
+for index, link in enumerate(links, 1):
+    filename = 'images_%02d.tar.gz' % index
     print('downloading %s...' % filename)
-    urllib.request.urlretrieve(link, filename) # download the tar.gz file
+    urllib.request.urlretrieve(link, filename) # download the tgz file
 
 print('Download complete. Please check the checksums')

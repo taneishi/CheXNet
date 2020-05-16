@@ -7,11 +7,10 @@ import os
 class ChestXrayDataSet(Dataset):
     def __init__(self, data_dir, image_list_file, transform=None):
         '''
-        Args:
-            data_dir: path to image directory.
-            image_list_file: path to the file containing images
-                with corresponding labels.
-            transform: optional transform to be applied on a sample.
+        data_dir: path to image directory.
+        image_list_file: path to the file containing images
+            with corresponding labels.
+        transform: optional transform to be applied on a sample.
         '''
         image_names = []
         labels = []
@@ -29,10 +28,8 @@ class ChestXrayDataSet(Dataset):
 
     def __getitem__(self, index):
         '''
-        Args:
-            index: the index of item
-        Returns:
-            image and its labels
+        index: the index of item
+        Return image and its labels
         '''
         image_name = self.image_names[index]
         image = Image.open(image_name).convert('RGB')

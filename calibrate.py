@@ -1,6 +1,7 @@
 from accuracy_checker.adapters import Adapter
 from accuracy_checker.config import ConfigValidator, StringField
 from accuracy_checker.representation import MultiLabelRecognitionAnnotation, MultiLabelRecognitionPrediction
+import openvino.tools.calibration as calibration
 
 class ChestXAdapter(Adapter):
     __provider__ = 'chest_xray'
@@ -28,12 +29,8 @@ class ChestXAdapter(Adapter):
         for identifier, multi_label in zip(identifiers, raw_output[self.attributes_recognition_out]):
             multi_label[multi_label > 0.5] = 1.
             multi_label[multi_label <= 0.5] = 0.
-
             result.append(MultiLabelRecognitionPrediction(identifier, multi_label.reshape(-1)))
-
         return result
-
-import openvino.tools.calibration as calibration
 
 if __name__ == '__main__':
     with calibration.CommandLineProcessor.process() as config:
