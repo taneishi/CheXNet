@@ -92,9 +92,6 @@ def main(args):
 
         if args.export_model:
             export_onnx(model, data)
-
-        if index == 32:
-            break
             
     AUCs = [roc_auc_score(gt.cpu()[:, i], pred.cpu()[:, i]) for i in range(N_CLASSES)]
     AUC_avg = np.mean(AUCs)
