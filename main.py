@@ -17,8 +17,8 @@ CLASS_NAMES = [
     'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
     'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia'
 ]
-DATA_DIR = './ChestX-ray14/images'
-TEST_IMAGE_LIST = './ChestX-ray14/labels/test_list.txt'
+DATA_DIR = '../ChestX-ray14/images'
+TEST_IMAGE_LIST = './labels/test_list.txt'
 
 def export_onnx(model, data):
     torch.onnx.export(model, data, 
