@@ -37,6 +37,7 @@ def main():
                 'input': {0 : 'batch_size'},
                 'output': {0: 'batch_size'}},
             verbose=False)
+    print('ONNX model exported.')
 
 if __name__ == '__main__':
     main()
