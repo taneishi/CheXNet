@@ -67,11 +67,11 @@ def main(args):
 
         output_mean = output.view(bs, n_crops, -1).mean(1)
 
-        print('batch %03d/%03d %6.3f sec' % (index, len(test_loader), (timeit.default_timer() - start_time)))
-
         gt = torch.cat((gt, target))
         pred = torch.cat((pred, output_mean))
             
+        print('batch %03d/%03d %6.3fsec' % (index, len(test_loader), (timeit.default_timer() - start_time)))
+
     AUCs = [roc_auc_score(gt.cpu()[:, i], pred.cpu()[:, i]) for i in range(N_CLASSES)]
     AUC_avg = np.mean(AUCs)
     print('The average AUC is %6.3f' % AUC_avg)
