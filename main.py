@@ -1,11 +1,10 @@
 import numpy as np
 import torch
-import torch.nn as nn
-import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from sklearn.metrics import roc_auc_score
 from read_data import ChestXrayDataSet
+from model import DenseNet121
 import argparse
 import timeit
 import sys
@@ -14,30 +13,13 @@ import os
 MODEL_PATH = 'model/model.pth'
 N_CLASSES = 14
 CLASS_NAMES = [
-    'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
-    'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia'
-]
+        'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
+        'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia']
 DATA_DIR = '../ChestX-ray14/images'
 TEST_IMAGE_LIST = './labels/test_list.txt'
 
-def export_onnx(model, data):
-    torch.onnx.export(model, data, 
-            os.path.join('model', 'densenet121.onnx'),
-            export_params=True, do_constant_folding=True,
-            input_names=['input'], output_names=['output'],
-            dynamic_axes={
-                'input': {0: 'batch_size'}, 
-                'output': {0: 'batch_size'}},
-            verbose=False)
-    sys.exit('ONNX model exported.')
-
 def main(args):
-    batch_size = 32
-
-    if args.export_model:
-        device = torch.device('cpu')
-    else:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cpu')
     print('Using %s device.' % device)
     
     # initialize and load the model
@@ -64,7 +46,7 @@ def main(args):
                 transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])),
                 transforms.Lambda(lambda crops: torch.stack([normalize(crop) for crop in crops]))
                 ]))
-    test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=args.batch_size, shuffle=False)
 
     # initialize the ground truth and output tensor
     gt = torch.FloatTensor().to(device)
@@ -85,13 +67,10 @@ def main(args):
 
         output_mean = output.view(bs, n_crops, -1).mean(1)
 
+        print('batch %03d/%03d %6.3f sec' % (index, len(test_loader), (timeit.default_timer() - start_time)))
+
         gt = torch.cat((gt, target))
         pred = torch.cat((pred, output_mean))
-
-        print('\rbatch %03d/%03d %6.3f sec' % (index, len(test_loader), (timeit.default_timer() - start_time)))
-
-        if args.export_model:
-            export_onnx(model, data)
             
     AUCs = [roc_auc_score(gt.cpu()[:, i], pred.cpu()[:, i]) for i in range(N_CLASSES)]
     AUC_avg = np.mean(AUCs)
@@ -100,22 +79,9 @@ def main(args):
     for i in range(N_CLASSES):
         print('The AUC of %s is %6.3f' % (CLASS_NAMES[i], AUCs[i]))
 
-class DenseNet121(nn.Module):
-    def __init__(self, out_size):
-        super(DenseNet121, self).__init__()
-        self.densenet121 = torchvision.models.densenet121(pretrained=True)
-        num_features = self.densenet121.classifier.in_features
-        self.densenet121.classifier = nn.Sequential(
-                nn.Linear(num_features, out_size),
-                nn.Sigmoid())
-
-    def forward(self, x):
-        x = self.densenet121(x)
-        return x
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-export_model', action='store_true')
+    parser.add_argument('--batch_size', default=32, type=int)
     args = parser.parse_args()
 
     main(args)
