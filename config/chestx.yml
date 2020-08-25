@@ -10,7 +10,6 @@ models:
         weights: densenet121.bin
         #adapter: chest_xray
         adapter: person_attributes
-      
 
     datasets:
       - name: chestX-ray14
@@ -39,5 +38,3 @@ models:
         metrics:
           - type: multi_accuracy
             label_map: label_map
-
-            

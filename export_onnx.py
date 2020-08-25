@@ -1,15 +1,9 @@
 import torch
-from model import DenseNet121
+from model import DenseNet121, CLASS_NAMES, N_CLASSES
+import argparse
 import os
 
-MODEL_PATH = 'model/model.pth'
-N_CLASSES = 14
-CLASS_NAMES = [
-        'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
-        'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia']
-BATCH_SIZE = 32
-
-def main():
+def main(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     # initialize and load the model
@@ -18,14 +12,14 @@ def main():
     if torch.cuda.device_count() > 1:
         model = torch.nn.DataParallel(model).to(device)
 
-    if os.path.isfile(MODEL_PATH):
-        model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+    if os.path.isfile(args.model_path):
+        model.load_state_dict(torch.load(args.model_path, map_location=device))
         print('model state has loaded')
     else:
         print('=> model state file not found')
 
     model.train(False)
-    dummy_input = torch.randn(BATCH_SIZE, 3, 224, 224)
+    dummy_input = torch.randn(args.batch_size, 3, 224, 224)
     torch_out = model(dummy_input)
     torch.onnx.export(model,
             dummy_input, 'model/densenet121.onnx',
@@ -40,4 +34,9 @@ def main():
     print('ONNX model exported.')
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model_path', default='model/model.pth', type=str)
+    parser.add_argument('--batch_size', default=32, type=int)
+    args = parser.parse_args()
+
+    main(args)

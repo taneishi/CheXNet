@@ -4,22 +4,17 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from sklearn.metrics import roc_auc_score
 from read_data import ChestXrayDataSet
-from model import DenseNet121
+from model import DenseNet121, CLASS_NAMES, N_CLASSES
 import argparse
 import timeit
 import sys
 import os
 
-MODEL_PATH = 'model/model.pth'
-N_CLASSES = 14
-CLASS_NAMES = [
-        'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
-        'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia']
-DATA_DIR = '../ChestX-ray14/images'
+DATA_DIR = './images'
 TEST_IMAGE_LIST = './labels/test_list.txt'
 
 def main(args):
-    device = torch.device('cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() and not args.cpu else 'cpu')
     print('Using %s device.' % device)
     
     # initialize and load the model
@@ -28,8 +23,8 @@ def main(args):
     if torch.cuda.device_count() > 1:
         model = torch.nn.DataParallel(model).to(device)
 
-    if os.path.isfile(MODEL_PATH):
-        model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+    if os.path.isfile(args.model_path):
+        model.load_state_dict(torch.load(args.model_path, map_location=device))
         print('model state has loaded')
     else:
         print('=> model state file not found')
@@ -81,6 +76,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--model_path', default='model/model.pth', type=str)
     parser.add_argument('--batch_size', default=32, type=int)
     args = parser.parse_args()
 

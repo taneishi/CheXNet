@@ -6,12 +6,12 @@ from accuracy_checker.config import PathField
 from accuracy_checker.utils import get_path
 import os
 
-from model import CLASS_NAMES
+from main import CLASS_NAMES
 
 class ChestXRayConverter(FileBasedAnnotationConverter):
     __provider__ = 'chest_xray'
     annotation_types = (MultiLabelRecognitionAnnotation,)
-    topology_types = (ImageClassification, )
+    topology_types = (ImageClassification,)
 
     @classmethod
     def parameters(cls):
@@ -41,7 +41,7 @@ class ChestXRayConverter(FileBasedAnnotationConverter):
         dataset_directory = get_path(self.data_dir, is_directory=True)
 
         # read and convert annotation
-        image_list_file = os.path.join(str(dataset_directory), 'labels', 'val_list.txt')
+        image_list_file = os.path.join('labels', 'val_list.txt')
         images_dir = os.path.join(str(dataset_directory), 'images')
         
         image_names = []

@@ -9,16 +9,12 @@ from torch.utils.data import DataLoader
 from read_data import ChestXrayDataSet
 import argparse
 import timeit
-import sys
 import os
 
-N_CLASSES = 14
-CLASS_NAMES = [
-        'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
-        'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia'
-        ]
-DATA_DIR = './ChestX-ray14/images'
-TEST_IMAGE_LIST = './ChestX-ray14/labels/test_list.txt'
+from model import CLASS_NAMES, N_CLASSES
+
+DATA_DIR = './images'
+TEST_IMAGE_LIST = './labels/test_list.txt'
 
 N_CROPS = 10
 
@@ -30,15 +26,15 @@ def main(modelfile):
 
     log.info('Creating Inference Engine')
     ie = IECore()
-    net = IENetwork(model=model_xml, weights=model_bin)
-    #net = ie.read_network(model=model_xml, weights=model_bin)
+    #net = IENetwork(model=model_xml, weights=model_bin)
+    net = ie.read_network(model=model_xml, weights=model_bin)
 
     log.info('Preparing input blobs')
-    input_blob = next(iter(net.inputs))
+    input_blob = next(iter(net.input_info))
     out_blob = next(iter(net.outputs))
     net.batch_size = (batch_size * N_CROPS)
 
-    n, c, h, w = net.inputs[input_blob].shape
+    n, c, h, w = net.input_info[input_blob].input_data.shape
 
     # for image load
     normalize = transforms.Normalize(
@@ -92,7 +88,7 @@ def main(modelfile):
         
         print('%03d/%03d, time: %6.3f sec' % (index, len(test_loader), (timeit.default_timer() - start_time)))
 
-        if index == 32:
+        if index == 10:
             break
         
     AUCs = [roc_auc_score(gt.cpu()[:, i], pred.cpu()[:, i]) for i in range(N_CLASSES)]
@@ -103,10 +99,8 @@ def main(modelfile):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-
-    parser.add_argument('-fp32', action='store_true')
-    parser.add_argument('-int8', action='store_true')
-
+    parser.add_argument('--fp32', action='store_true')
+    parser.add_argument('--int8', action='store_true')
     args = parser.parse_args()
 
     if args.fp32:
