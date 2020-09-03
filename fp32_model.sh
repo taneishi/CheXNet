@@ -7,11 +7,12 @@
 cd ${PBS_O_WORKDIR}
 mkdir -p model
 
-# fp32 model
-source /opt/intel/openvino/bin/setupvars.sh
+# l_openvino_toolkit_p_2019.3.376.tgz
+source ${PBS_O_HOME}/intel/openvino/bin/setupvars.sh
 
-python ${INTEL_OPENVINO_DIR}/deployment_tools/model_optimizer/mo.py \
-    --input_model ${PWD}/model/densenet121.onnx --data_type=FP32 --batch 1 --output_dir model \
-    --log_level WARNING
+# fp32 model optimization
+python ${INTEL_OPENVINO_DIR}/deployment_tools/model_optimizer/mo_onnx.py \
+    --input_model ${PWD}/model/densenet121.onnx --data_type=FP32 --batch 1 --output_dir model
 
 python ov-inference.py --fp32
+python ov-inf-async.py --fp32
