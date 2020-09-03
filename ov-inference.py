@@ -1,4 +1,3 @@
-# The main CheXNet model implementation.
 import numpy as np
 from sklearn.metrics import roc_auc_score
 import logging as log
@@ -6,11 +5,11 @@ from openvino.inference_engine import IENetwork, IECore
 import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
-from read_data import ChestXrayDataSet
 import argparse
 import timeit
 import os
 
+from read_data import ChestXrayDataSet
 from model import CLASS_NAMES, N_CLASSES
 
 DATA_DIR = './images'
@@ -19,8 +18,6 @@ TEST_IMAGE_LIST = './labels/test_list.txt'
 N_CROPS = 10
 
 def main(modelfile):
-    batch_size = 32
-
     model_xml = os.path.join('model', modelfile)
     model_bin = model_xml.replace('xml', 'bin')
 
@@ -33,7 +30,7 @@ def main(modelfile):
     #input_blob = next(iter(net.input_info))
     input_blob = next(iter(net.inputs))
     out_blob = next(iter(net.outputs))
-    net.batch_size = (batch_size * N_CROPS)
+    net.batch_size = (args.batch_size * N_CROPS)
 
     #n, c, h, w = net.input_info[input_blob].input_data.shape
     n, c, h, w = net.inputs[input_blob].shape
@@ -53,7 +50,7 @@ def main(modelfile):
                 transforms.Lambda(lambda crops: torch.stack([normalize(crop) for crop in crops]))
                 ]))
     
-    test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False, pin_memory=False)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=args.batch_size, shuffle=False, pin_memory=False)
 
     gt = torch.FloatTensor()
     pred = torch.FloatTensor()
@@ -71,17 +68,17 @@ def main(modelfile):
 
         images = data.view(-1, c, h, w).numpy()
 
-        if bs != batch_size:
-            images2 = np.zeros(shape=(batch_size * n_crops, c, h, w))
+        if bs != args.batch_size:
+            images2 = np.zeros(shape=(args.batch_size * n_crops, c, h, w))
             images2[:bs*n_crops, :c, :h, :w] = images
             images = images2
 
         res = exec_net.infer(inputs={input_blob: images})
         res = res[out_blob]
-        res = res.reshape(batch_size, n_crops,-1)
+        res = res.reshape(args.batch_size, n_crops,-1)
         res = np.mean(res, axis=1)
 
-        if bs != batch_size:
+        if bs != args.batch_size:
             res = res[:bs, :res.shape[1]]
 
         pred = torch.cat((pred, torch.from_numpy(res)), 0)
@@ -101,6 +98,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--fp32', action='store_true')
     parser.add_argument('--int8', action='store_true')
+    parser.add_argument('--batch_size', default=32, type=int)
     args = parser.parse_args()
 
     if args.fp32:
