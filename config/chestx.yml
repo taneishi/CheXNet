@@ -13,7 +13,7 @@ models:
 
     datasets:
       - name: chestX-ray14
-        data_source: ChestX-ray14/images
+        data_source: images
         reader: pillow_imread
 
         # Image channels must be swapped, because "pillow_imread" reads in RGB, but converted model expect BGR
