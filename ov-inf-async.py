@@ -1,6 +1,3 @@
-'''
-The main CheXNet model implementation.
-'''
 import numpy as np
 from sklearn.metrics import roc_auc_score
 from openvino.inference_engine import IENetwork, IECore
@@ -10,7 +7,10 @@ from torch.utils.data import DataLoader
 from read_data import ChestXrayDataSet
 import logging as log
 import timeit
+import argparse
 import os
+
+from model import CLASS_NAMES, N_CLASSES
 
 # for async
 #from openvino.tools.benchmark.utils.infer_request_wrap import InferRequestsQueue
@@ -97,21 +97,16 @@ class InferRequestsQueue:
             self.cv.wait()
         self.cv.release()
 
-N_CLASSES = 14
-CLASS_NAMES = [
-        'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
-        'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia'
-        ]
-DATA_DIR = './ChestX-ray14/images'
-TEST_IMAGE_LIST = './ChestX-ray14/labels/test_list.txt'
+DATA_DIR = './images'
+TEST_IMAGE_LIST = './labels/bmt_list.txt'
 BATCH_SIZE = 32
 N_CROPS = 10
 NUM_REQUESTS=8
 
-def main():
+def main(modelfile):
     #model_xml = 'model/densenet121_i8.xml'
-    model_xml = 'model/densenet121.xml'
-    model_bin = os.path.splitext(model_xml)[0]+'.bin'
+    model_xml = os.path.join('model', modelfile)
+    model_bin = model_xml.replace('.xml', '.bin')
 
     log.info('Creating Inference Engine')
     ie = IECore()
@@ -157,6 +152,8 @@ def main():
     print('reqeuest len', len(infer_requests))
     request_queue = InferRequestsQueue(infer_requests, out_blob)
 
+    start_time = timeit.default_timer()
+
     for i, (inp, target) in enumerate(test_loader):
         start_time = timeit.default_timer()
         # gt = torch.cat((gt, target), 0)
@@ -193,14 +190,24 @@ def main():
         gt = torch.cat((gt, queue.get_ground_truth()), 0)
         pred = torch.cat((pred, queue.get_prediction()), 0)
         
-    print('Elapsed time: %0.2f sec.' % (timeit.default_timer() - now))
+    print('Elapsed time: %0.2f sec.' % (timeit.default_timer() - start_time))
 
     AUCs = [roc_auc_score(gt.cpu()[:, i], pred.cpu()[:, i]) for i in range(N_CLASSES)]
     AUC_avg = np.array(AUCs).mean()
 
-    print('The average AUROC is {AUROC_avg:.3f}'.format(AUROC_avg=AUROC_avg))
+    print('The average ROC-AUC is {AUC_avg:.3f}'.format(AUC_avg=AUC_avg))
     for i in range(N_CLASSES):
-        print('The AUROC of {} is {:.3f}'.format(CLASS_NAMES[i], AUROCs[i]))
+        print('The ROC-AUC of {} is {:.3f}'.format(CLASS_NAMES[i], AUCs[i]))
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--fp32', action='store_true')
+    parser.add_argument('--int8', action='store_true')
+    args = parser.parse_args()
+
+    if args.fp32:
+        main(modelfile='densenet121.xml')
+    elif args.int8:
+        main(modelfile='densenet121_i8.xml')
+    else:
+        parser.print_help()
