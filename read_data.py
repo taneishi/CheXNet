@@ -1,4 +1,3 @@
-# Read images and corresponding labels.
 import torch
 from torch.utils.data import Dataset
 from PIL import Image
