@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l nodes=1:ppn=1
+#PBS -l nodes=1:ppn=1:clx
 #PBS -N chexnet_fp32
 #PBS -j oe
 #PBS -o log/output_fp32.log
