@@ -3,15 +3,15 @@ import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from sklearn.metrics import roc_auc_score
-from read_data import ChestXrayDataSet
-from model import DenseNet121, CLASS_NAMES, N_CLASSES
 import argparse
 import timeit
-import sys
 import os
 
+from read_data import ChestXrayDataSet
+from model import DenseNet121, CLASS_NAMES, N_CLASSES
+
 DATA_DIR = './images'
-TEST_IMAGE_LIST = './labels/test_list.txt'
+TEST_IMAGE_LIST = './labels/bmt_list.txt'
 
 def main(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -66,9 +66,6 @@ def main(args):
         pred = torch.cat((pred, output_mean))
             
         print('batch %03d/%03d %6.3fsec' % (index, len(test_loader), (timeit.default_timer() - start_time)))
-
-        if index == 10:
-            break
 
     torch.onnx.export(net,
             data, 'model/densenet121.onnx',
