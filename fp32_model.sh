@@ -10,7 +10,8 @@ mkdir -p model
 # fp32 model
 source /opt/intel/openvino/bin/setupvars.sh
 
-python ${INTEL_OPENVINO_DIR}/deployment_tools/model_optimizer/mo_onnx.py \
-    --input_model ${PWD}/model/densenet121.onnx --data_type=FP32 --batch 1 --output_dir model
+python ${INTEL_OPENVINO_DIR}/deployment_tools/model_optimizer/mo.py \
+    --input_model ${PWD}/model/densenet121.onnx --data_type=FP32 --batch 1 --output_dir model \
+    --log_level WARNING
 
 python ov-inference.py --fp32

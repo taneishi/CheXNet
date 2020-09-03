@@ -26,15 +26,17 @@ def main(modelfile):
 
     log.info('Creating Inference Engine')
     ie = IECore()
-    #net = IENetwork(model=model_xml, weights=model_bin)
-    net = ie.read_network(model=model_xml, weights=model_bin)
+    net = IENetwork(model=model_xml, weights=model_bin) 
+    #net = ie.read_network(model=model_xml, weights=model_bin)
 
     log.info('Preparing input blobs')
-    input_blob = next(iter(net.input_info))
+    #input_blob = next(iter(net.input_info))
+    input_blob = next(iter(net.inputs))
     out_blob = next(iter(net.outputs))
     net.batch_size = (batch_size * N_CROPS)
 
-    n, c, h, w = net.input_info[input_blob].input_data.shape
+    #n, c, h, w = net.input_info[input_blob].input_data.shape
+    n, c, h, w = net.inputs[input_blob].shape
 
     # for image load
     normalize = transforms.Normalize(
@@ -56,8 +58,6 @@ def main(modelfile):
     gt = torch.FloatTensor()
     pred = torch.FloatTensor()
     
-    # images = np.ndarray(shape=(n,c,h,w))
-
     # loading model to the plugin
     log.info('Loading model to the plugin')
     #exec_net = ie.load_network(network=net, device_name='CPU', config={'DYN_BATCH_ENABLED': 'YES'})

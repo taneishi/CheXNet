@@ -14,17 +14,17 @@ DATA_DIR = './images'
 TEST_IMAGE_LIST = './labels/test_list.txt'
 
 def main(args):
-    device = torch.device('cuda' if torch.cuda.is_available() and not args.cpu else 'cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print('Using %s device.' % device)
     
     # initialize and load the model
-    model = DenseNet121(N_CLASSES).to(device)
+    net = DenseNet121(N_CLASSES).to(device)
 
     if torch.cuda.device_count() > 1:
-        model = torch.nn.DataParallel(model).to(device)
+        net = torch.nn.DataParallel(net).to(device)
 
     if os.path.isfile(args.model_path):
-        model.load_state_dict(torch.load(args.model_path, map_location=device))
+        net.load_state_dict(torch.load(args.model_path, map_location=device))
         print('model state has loaded')
     else:
         print('=> model state file not found')
@@ -48,7 +48,7 @@ def main(args):
     pred = torch.FloatTensor().to(device)
 
     # switch to evaluate mode
-    model.eval()
+    net.eval()
 
     for index, (data, target) in enumerate(test_loader):
         start_time = timeit.default_timer()
@@ -58,7 +58,7 @@ def main(args):
         data = data.view(-1, c, h, w).to(device)
 
         with torch.no_grad():
-            output = model(data)
+            output = net(data)
 
         output_mean = output.view(bs, n_crops, -1).mean(1)
 
@@ -66,6 +66,21 @@ def main(args):
         pred = torch.cat((pred, output_mean))
             
         print('batch %03d/%03d %6.3fsec' % (index, len(test_loader), (timeit.default_timer() - start_time)))
+
+        if index == 10:
+            break
+
+    torch.onnx.export(net,
+            data, 'model/densenet121.onnx',
+            export_params=True,
+            do_constant_folding=True,
+            input_names=['input'],
+            output_names=['output'],
+            dynamic_axes={
+                'input': {0 : 'batch_size'},
+                'output': {0: 'batch_size'}},
+            verbose=False)
+    print('ONNX model exported.')
 
     AUCs = [roc_auc_score(gt.cpu()[:, i], pred.cpu()[:, i]) for i in range(N_CLASSES)]
     AUC_avg = np.mean(AUCs)
