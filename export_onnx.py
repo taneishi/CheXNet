@@ -1,7 +1,8 @@
 import torch
-from model import DenseNet121, CLASS_NAMES, N_CLASSES
 import argparse
 import os
+
+from model import DenseNet121, CLASS_NAMES, N_CLASSES
 
 def main(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
