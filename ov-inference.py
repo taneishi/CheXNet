@@ -13,7 +13,7 @@ from read_data import ChestXrayDataSet
 from model import CLASS_NAMES, N_CLASSES
 
 DATA_DIR = './images'
-TEST_IMAGE_LIST = './labels/test_list.txt'
+TEST_IMAGE_LIST = './labels/bmt_list.txt'
 
 N_CROPS = 10
 
@@ -85,9 +85,6 @@ def main(modelfile):
         
         print('%03d/%03d, time: %6.3f sec' % (index, len(test_loader), (timeit.default_timer() - start_time)))
 
-        if index == 10:
-            break
-        
     AUCs = [roc_auc_score(gt.cpu()[:, i], pred.cpu()[:, i]) for i in range(N_CLASSES)]
     AUC_avg = np.array(AUCs).mean()
     print('The average AUC is {AUC_avg:.3f}'.format(AUC_avg=AUC_avg))
