@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l nodes=1:ppn=1:clx
+#PBS -l nodes=1:ppn=1
 #PBS -N chexnet_conv
 #PBS -j oe
 #PBS -o log/output_conv.log
