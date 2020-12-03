@@ -11,7 +11,7 @@ from read_data import ChestXrayDataSet
 from model import DenseNet121, CLASS_NAMES, N_CLASSES
 
 DATA_DIR = './images'
-TEST_IMAGE_LIST = './labels/bmt_list.txt'
+TEST_IMAGE_LIST = './labels/test_list.txt'
 
 def main(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l nodes=1:ppn=1
+#PBS -l nodes=1:ppn=2
 #PBS -N chexnet_int8
 #PBS -j oe
 #PBS -o log/output_int8.log

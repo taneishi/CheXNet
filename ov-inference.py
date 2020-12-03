@@ -13,7 +13,7 @@ from read_data import ChestXrayDataSet
 from model import CLASS_NAMES, N_CLASSES
 
 DATA_DIR = './images'
-TEST_IMAGE_LIST = './labels/bmt_list.txt'
+TEST_IMAGE_LIST = './labels/test_list.txt'
 
 N_CROPS = 10
 
