@@ -1,4 +1,4 @@
-# Classification of Thoracic Diseases by Chest X-ray Image
+# Classification of Thoracic Diseases on Chest X-ray Images
 
 ## Introduction
 
