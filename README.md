@@ -53,7 +53,7 @@ The results of training using `Habana Gaudi` showed that it took about 860 secon
 
 ## Acknowledgements
 
-We thank *N. Sato*, Kyoto University, for advising us to use the `ChestX-ray14` dataset.
+The use of `ChestX-ray14` dataset is advised by *N. Sato*, Kyoto University.
 
 [^Wang]: X. Wang et al., *ChestX-Ray8: Hospital-Scale Chest X-Ray Database and Benchmarks on Weakly-Supervised Classification and Localization of Common Thorax Diseases*, **CVPR**, 2017.
 [^Rajpurkar]: P. Rajpurkar et al, *CheXNet: Radiologist-Level Pneumonia Detection on Chest X-Rays with Deep Learning*, **arXiv**, 2017.
